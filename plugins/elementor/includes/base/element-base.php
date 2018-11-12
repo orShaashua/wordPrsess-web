@@ -624,6 +624,14 @@ abstract class Element_Base extends Controls_Stack {
 	 * @access public
 	 */
 	public function print_element() {
+		ob_start();
+		$this->_print_content();
+		$content = ob_get_clean();
+
+		if ( empty( $content ) ) {
+			return;
+		}
+
 		$element_type = $this->get_type();
 
 		/**
@@ -653,15 +661,16 @@ abstract class Element_Base extends Controls_Stack {
 		$this->_add_render_attributes();
 
 		$this->before_render();
-		$this->_print_content();
+		echo $content;
 		$this->after_render();
 
 		$this->enqueue_scripts();
 		$this->enqueue_styles();
+
 		/**
 		 * After frontend element render.
 		 *
-		 * Fires after Elementor element was rendered in the frontend.
+		 * Fires after Elementor element is rendered in the frontend.
 		 *
 		 * The dynamic portion of the hook name, `$element_type`, refers to the element type.
 		 *
@@ -670,6 +679,17 @@ abstract class Element_Base extends Controls_Stack {
 		 * @param Element_Base $this The element.
 		 */
 		do_action( "elementor/frontend/{$element_type}/after_render", $this );
+
+		/**
+		 * After frontend element render.
+		 *
+		 * Fires after Elementor element is rendered in the frontend.
+		 *
+		 * @since 2.3.0
+		 *
+		 * @param Element_Base $this The element.
+		 */
+		do_action( 'elementor/frontend/after_render', $this );
 	}
 
 	/**
@@ -790,6 +810,10 @@ abstract class Element_Base extends Controls_Stack {
 	protected function _add_render_attributes() {
 		$id = $this->get_id();
 
+		$settings = $this->get_active_settings();
+		$frontend_settings = $this->get_frontend_settings();
+		$controls = $this->get_controls();
+
 		$this->add_render_attribute( '_wrapper', 'data-id', $id );
 
 		$this->add_render_attribute(
@@ -798,10 +822,6 @@ abstract class Element_Base extends Controls_Stack {
 				'elementor-element-' . $id,
 			]
 		);
-
-		$settings = $this->get_active_settings();
-
-		$controls = $this->get_controls();
 
 		$class_settings = [];
 
@@ -828,11 +848,20 @@ abstract class Element_Base extends Controls_Stack {
 			$this->add_render_attribute( '_wrapper', 'id', trim( $settings['_element_id'] ) );
 		}
 
-		$frontend_settings = $this->get_frontend_settings();
-
 		if ( $frontend_settings ) {
 			$this->add_render_attribute( '_wrapper', 'data-settings', wp_json_encode( $frontend_settings ) );
 		}
+
+		/**
+		 * After element attribute rendered.
+		 *
+		 * Fires after the attributes of the element HTML tag are rendered.
+		 *
+		 * @since 2.3.0
+		 *
+		 * @param Element_Base $this The element.
+		 */
+		do_action( 'elementor/element/after_add_attributes', $this );
 	}
 
 	/**
